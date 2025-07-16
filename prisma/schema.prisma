@@ -1,0 +1,169 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Car {
+  id               String            @id @default(cuid())
+  name             String
+  category         String
+  basePrice        Float
+  description      String
+  imageUrl         String?
+  imageData        String?
+  imageMimeType    String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  options          CarOption[]
+  translations     CarTranslation[]
+  checkoutSessions CheckoutSession[]
+  configurations   Configuration[]
+
+  @@map("cars")
+}
+
+model CarTranslation {
+  id          String   @id @default(cuid())
+  carId       String
+  locale      String
+  name        String
+  category    String
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  car         Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@unique([carId, locale])
+  @@map("car_translations")
+}
+
+model Option {
+  id                   String                @id @default(cuid())
+  name                 String
+  category             String
+  price                Float
+  description          String?
+  detailedDescription  String?
+  imageUrl             String?
+  imageData            String?
+  imageMimeType        String?
+  exclusiveGroup       String?
+  isRequired           Boolean               @default(false)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  cars                 CarOption[]
+  configurationOptions ConfigurationOption[]
+  conflictsAgainst     OptionConflict[]      @relation("ConflictToOption")
+  conflictsWith        OptionConflict[]      @relation("ConflictFromOption")
+  translations         OptionTranslation[]
+
+  @@map("options")
+}
+
+model OptionTranslation {
+  id                  String   @id @default(cuid())
+  optionId            String
+  locale              String
+  name                String
+  category            String
+  description         String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  detailedDescription String?
+  option              Option   @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@unique([optionId, locale])
+  @@map("option_translations")
+}
+
+model CarOption {
+  carId    String
+  optionId String
+  option   Option @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  car      Car    @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@id([carId, optionId])
+  @@map("car_options")
+}
+
+model User {
+  id             String          @id @default(cuid())
+  email          String          @unique
+  name           String
+  password       String
+  role           String          @default("user")
+  isRegistered   Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  configurations Configuration[]
+
+  @@map("users")
+}
+
+model Configuration {
+  id         String                @id @default(cuid())
+  name       String
+  totalPrice Float
+  userId     String
+  carId      String
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+  options    ConfigurationOption[]
+  car        Car                   @relation(fields: [carId], references: [id], onDelete: Cascade)
+  user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("configurations")
+}
+
+model ConfigurationOption {
+  configurationId String
+  optionId        String
+  option          Option        @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  configuration   Configuration @relation(fields: [configurationId], references: [id], onDelete: Cascade)
+
+  @@id([configurationId, optionId])
+  @@map("configuration_options")
+}
+
+model OptionConflict {
+  id           String   @id @default(cuid())
+  fromOptionId String
+  toOptionId   String
+  conflictType String   @default("exclusive")
+  createdAt    DateTime @default(now())
+  toOption     Option   @relation("ConflictToOption", fields: [toOptionId], references: [id], onDelete: Cascade)
+  fromOption   Option   @relation("ConflictFromOption", fields: [fromOptionId], references: [id], onDelete: Cascade)
+
+  @@unique([fromOptionId, toOptionId])
+  @@map("option_conflicts")
+}
+
+model RequiredGroup {
+  id             String   @id @default(cuid())
+  exclusiveGroup String   @unique
+  isRequired     Boolean  @default(true)
+  displayName    String
+  description    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("required_groups")
+}
+
+model CheckoutSession {
+  id                String   @id
+  carId             String
+  selectedOptions   String
+  totalPrice        Float
+  configurationName String?
+  userId            String?
+  createdAt         DateTime @default(now())
+  expiresAt         DateTime
+  car               Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@map("checkout_sessions")
+}

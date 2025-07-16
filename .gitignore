@@ -12,6 +12,11 @@
 
 # testing
 /coverage
+*.lcov
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
 
 # next.js
 /.next/
@@ -33,9 +38,60 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# prisma
+*.db
+*.db-journal
+prisma/prisma/
+
+# api documentation
+/dist/
+
+# temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# logs
+logs
+*.log
+
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma
+
+### VisualStudioCode ###
+.vscode/*
+#!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+### macOS ###
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+
+### Linux ###
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+### Windows ###
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini

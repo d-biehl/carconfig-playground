@@ -1,0 +1,65 @@
+extends:
+  - recommended
+
+apis:
+  carconfigurator@v1:
+    root: ./openapi.json
+
+rules:
+  operation-tag-defined: off
+  security-defined: off
+  no-server-example.com: off
+  operation-operationId: off
+  operation-4xx-response: off
+  no-unresolved-refs: error
+  operation-summary: error
+  operation-description: warn
+  tag-description: off
+  no-unused-components: warn
+
+theme:
+  openapi:
+    generateCodeSamples:
+      languages:
+        - lang: curl
+        - lang: JavaScript
+        - lang: Python
+        - lang: Node.js
+    disableSearch: false
+    expandResponses: "200,201"
+    hideDownloadButton: false
+    jsonSampleExpandLevel: 2
+    menuToggle: true
+    nativeScrollbars: false
+    pathInMiddlePanel: false
+    requiredPropsFirst: true
+    scrollYOffset: 0
+    showExtensions: false
+    sortPropsAlphabetically: false
+    theme:
+      colors:
+        primary:
+          main: "#2563eb"
+        success:
+          main: "#059669"
+        warning:
+          main: "#d97706"
+        error:
+          main: "#dc2626"
+        text:
+          primary: "#1f2937"
+          secondary: "#6b7280"
+      typography:
+        fontSize: "14px"
+        lineHeight: "1.5em"
+        fontFamily: 'Inter, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+        headings:
+          fontFamily: 'Inter, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+          fontWeight: "600"
+      sidebar:
+        backgroundColor: "#fafafa"
+        textColor: "#374151"
+        activeTextColor: "#2563eb"
+      rightPanel:
+        backgroundColor: "#1f2937"
+        textColor: "#f9fafb"

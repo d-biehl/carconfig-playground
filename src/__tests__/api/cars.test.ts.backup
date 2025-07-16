@@ -1,0 +1,267 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { NextRequest } from 'next/server'
+import { GET, POST } from '@/app/api/cars/route'
+import { prisma } from '@/lib/prisma'
+
+// Mock Prisma
+vi.mock('@/lib/prisma', () => ({
+  prisma: {
+    car: {
+      findMany: vi.fn(),
+      create: vi.fn(),
+    },
+  },
+}))
+
+// Mock admin auth - disable auth for tests
+vi.mock('@/lib/adminAuth', () => ({
+  requireAdminAuth: <T extends (...args: unknown[]) => unknown>(handler: T) => handler,
+}))
+
+// Set locale to English for API tests
+vi.mock('next-intl/server', () => ({
+  getTranslations: () => (key: string) => {
+    const englishTranslations = {
+      'errors.internalServerError': 'Internal server error',
+      'errors.validationError': 'Validation error',
+      'errors.notFound': 'Not found',
+      'errors.unauthorized': 'Unauthorized',
+      'errors.forbidden': 'Forbidden',
+    }
+    return englishTranslations[key as keyof typeof englishTranslations] || key
+  },
+  getLocale: () => 'en',
+  getMessages: () => ({}),
+}))
+
+// Helper function to create mock NextRequest
+const createMockRequest = (url = 'http://localhost:3000/api/cars', options: RequestInit = {}) => {
+  return new NextRequest(url, {
+    method: 'GET',
+    headers: {
+      'accept-language': 'de-DE,de;q=0.9,en;q=0.8',
+      'content-type': 'application/json',
+    },
+    ...options,
+  })
+}
+
+describe('/api/cars', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  describe('GET /api/cars', () => {
+    it('should return all cars with options', async () => {
+      const mockCars = [
+        {
+          id: '1',
+          name: 'Luxury X5 SUV',
+          category: 'SUV',
+          basePrice: 45000,
+          description: 'Premium SUV',
+          imageUrl: '/images/cars/luxury-x5.jpg',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          options: [
+            {
+              option: {
+                id: '1',
+                name: 'Sportmotor',
+                category: 'Motor',
+                price: 8000,
+                description: 'V6 Motor',
+                imageUrl: '/images/options/sport-engine.jpg',
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              }
+            }
+          ]
+        }
+      ]
+
+      vi.mocked(prisma.car.findMany).mockResolvedValue(mockCars)
+
+      // Mock NextRequest
+      const mockRequest = {
+        headers: new Map([['accept-language', 'en']]),
+        url: 'http://localhost:3000/api/cars'
+      } as any
+
+      const response = await GET(mockRequest)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.success).toBe(true)
+      expect(data.data).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: mockCars[0].id,
+            name: mockCars[0].name,
+            basePrice: mockCars[0].basePrice,
+            category: mockCars[0].category,
+            description: mockCars[0].description,
+            imageUrl: mockCars[0].imageUrl,
+            createdAt: expect.any(String),
+            updatedAt: expect.any(String),
+            options: expect.arrayContaining([
+              expect.objectContaining({
+                option: expect.objectContaining({
+                  id: expect.any(String),
+                  name: expect.any(String),
+                  price: expect.any(Number)
+                })
+              })
+            ])
+          })
+        ])
+      )
+      expect(prisma.car.findMany).toHaveBeenCalledWith({
+        include: {
+          options: {
+            include: {
+              option: {
+                include: {
+                  translations: {
+                    where: {
+                      locale: 'de'
+                    }
+                  }
+                }
+              }
+            }
+          },
+          translations: {
+            where: {
+              locale: 'de'
+            }
+          }
+        },
+        orderBy: {
+          name: 'asc'
+        }
+      })
+    })
+
+    it('should handle database errors gracefully', async () => {
+      vi.mocked(prisma.car.findMany).mockRejectedValue(new Error('Database error'))
+
+      // Mock NextRequest
+      const mockRequest = {
+        headers: new Map([['accept-language', 'en']]),
+        url: 'http://localhost:3000/api/cars'
+      } as NextRequest
+
+      const response = await GET(mockRequest)
+      const data = await response.json()
+
+      expect(response.status).toBe(500)
+      expect(data.success).toBe(false)
+      expect(data.error).toBe('Interner Serverfehler')
+    })
+  })
+
+  describe('POST /api/cars', () => {
+    it('should create a new car successfully', async () => {
+      const newCar = {
+        name: 'Test Car',
+        category: 'SUV',
+        basePrice: 50000,
+        description: 'Test description',
+        imageUrl: '/images/cars/test-car.jpg'
+      }
+
+      const mockCreatedCar = {
+        id: '2',
+        ...newCar,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+
+      vi.mocked(prisma.car.create).mockResolvedValue(mockCreatedCar)
+
+      const request = new NextRequest('http://localhost:3000/api/cars', {
+        method: 'POST',
+        body: JSON.stringify(newCar),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.success).toBe(true)
+      expect(data.data).toEqual(
+        expect.objectContaining({
+          id: mockCreatedCar.id,
+          name: mockCreatedCar.name,
+          basePrice: mockCreatedCar.basePrice,
+          category: mockCreatedCar.category,
+          description: mockCreatedCar.description,
+          imageUrl: mockCreatedCar.imageUrl,
+          createdAt: expect.any(String),
+          updatedAt: expect.any(String)
+        })
+      )
+      expect(prisma.car.create).toHaveBeenCalledWith({
+        data: {
+          name: newCar.name,
+          category: newCar.category,
+          basePrice: newCar.basePrice,
+          description: newCar.description,
+          imageUrl: newCar.imageUrl,
+        }
+      })
+    })
+
+    it('should return 400 for missing required fields', async () => {
+      const incompleteData = {
+        name: 'Test Car',
+        // missing category, basePrice, description
+      }
+
+      const request = new NextRequest('http://localhost:3000/api/cars', {
+        method: 'POST',
+        body: JSON.stringify(incompleteData),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(400)
+      expect(data.success).toBe(false)
+      expect(data.error).toBe('Validierungsfehler')
+    })
+
+    it('should handle database errors during creation', async () => {
+      const newCar = {
+        name: 'Test Car',
+        category: 'SUV',
+        basePrice: 50000,
+        description: 'Test description'
+      }
+
+      vi.mocked(prisma.car.create).mockRejectedValue(new Error('Database error'))
+
+      const request = new NextRequest('http://localhost:3000/api/cars', {
+        method: 'POST',
+        body: JSON.stringify(newCar),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(500)
+      expect(data.success).toBe(false)
+      expect(data.error).toBe('Interner Serverfehler')
+    })
+  })
+})
