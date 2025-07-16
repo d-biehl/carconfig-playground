@@ -12,6 +12,7 @@ export default function AdminLoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [showDemoCredentials, setShowDemoCredentials] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
@@ -178,11 +179,31 @@ export default function AdminLoginPage() {
 
               <div className="text-center">
                 <div className="bg-secondary/50 border border-border rounded-lg p-4">
-                  <div className="text-sm text-secondary-foreground">
-                    <strong>Demo Credentials</strong><br />
-                    Email: <code className="bg-muted px-2 py-1 rounded text-foreground">admin@carconfigurator.com</code><br />
-                    Password: <code className="bg-muted px-2 py-1 rounded text-foreground">admin123</code>
-                  </div>
+                  {!showDemoCredentials ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowDemoCredentials(true)}
+                      className="text-sm text-secondary-foreground hover:text-foreground transition-colors cursor-pointer"
+                      data-testid="show-demo-credentials"
+                    >
+                      <strong>Demo Credentials</strong><br />
+                      <span className="text-muted-foreground">Click to reveal demo login credentials</span>
+                    </button>
+                  ) : (
+                    <div className="text-sm text-secondary-foreground">
+                      <strong>Demo Credentials</strong><br />
+                      <button
+                        type="button"
+                        onClick={() => setShowDemoCredentials(false)}
+                        className="float-right text-muted-foreground hover:text-foreground"
+                        data-testid="hide-demo-credentials"
+                      >
+                        ×
+                      </button>
+                      Email: <code className="bg-muted px-2 py-1 rounded text-foreground">admin@carconfigurator.com</code><br />
+                      Password: <code className="bg-muted px-2 py-1 rounded text-foreground">admin123</code>
+                    </div>
+                  )}
                 </div>
               </div>
             </form>
