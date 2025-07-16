@@ -1,4 +1,4 @@
-# 🚗 CarConfig Playground
+# 🚗 CarConfigurator Playground
 
 > A realistic vehicle configurator for **test automation training** - built with modern web technologies and intentionally imperfect for educational purposes
 
